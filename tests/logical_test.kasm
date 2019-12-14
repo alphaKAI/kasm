@@ -1,0 +1,4 @@
+and r0, r1
+or  r2, r3
+not r4, r5
+xor r6, r7

@@ -1,0 +1,2 @@
+addi r3, 1234
+addr r3, r3
