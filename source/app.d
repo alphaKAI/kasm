@@ -1,5 +1,5 @@
 import std.algorithm, std.array, std.stdio, std.string, std.format, std.file, std.path, std.conv;
-import kasm.lexer, kasm.parser, kasm.stringasm;
+import kasm.lexer, kasm.parser, kasm.assembler, kasm.stringemitter;
 
 void main(string[] args) {
   if (args.length == 1) {
@@ -15,7 +15,10 @@ void main(string[] args) {
   string data = readText(src_file);
   auto tokens = lex(data);
   auto code = parse(tokens);
-  auto asm_result = StringAssembler.assemble(code);
+  auto asm_result = Assembler!(string, StringEmitter).assemble(code);
+
+  writeln("assembly code:");
+  writeln(data);
 
   writeln("assembled codes: ");
   string dst_file = "%s.memb".format(baseName(src_file, ".kasm"));

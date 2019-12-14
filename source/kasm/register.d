@@ -19,7 +19,7 @@ enum Register {
   r15 = "r15",
 }
 
-ubyte reg_to_bytes(Register reg) {
+ubyte reg_to_byte(Register reg) {
   final switch (reg) with (Register) {
   case r0:
     return 0;
