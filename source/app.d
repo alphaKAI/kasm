@@ -7,27 +7,27 @@ void main(string[] args) {
   }
   args = args[1 .. $];
 
-  if (!exists(args[0])) {
-    throw new Error("No such a file - %s".format(args[0]));
+  foreach (src_file; args) {
+    if (!exists(src_file)) {
+      throw new Error("No such a file - %s".format(args[0]));
+    }
+
+    string data = readText(src_file);
+    auto tokens = lex(data);
+    auto code = parse(tokens);
+    auto asm_result = Assembler!(string, StringEmitter).assemble(code);
+
+    writefln("assembly code[%s]:", src_file);
+    writeln(data);
+
+    writeln("assembled codes: ");
+    string dst_file = "%s.memb".format(baseName(src_file, ".kasm"));
+    File dst = File(dst_file, "w");
+    foreach (line; asm_result) {
+      writeln(line);
+      dst.writeln(line);
+    }
+
+    writeln("[Assembled codes are saved as ", dst_file, "]");
   }
-
-  string src_file = args[0];
-  string data = readText(src_file);
-  auto tokens = lex(data);
-  auto code = parse(tokens);
-  auto asm_result = Assembler!(string, StringEmitter).assemble(code);
-
-  writeln("assembly code:");
-  writeln(data);
-
-  writeln("assembled codes: ");
-  string dst_file = "%s.memb".format(baseName(src_file, ".kasm"));
-  File dst = File(dst_file, "w");
-  foreach (line; asm_result) {
-    writeln(line);
-    dst.writeln(line);
-  }
-
-  writeln("[Assembled codes are saved as ", dst_file, "]");
-
 }
