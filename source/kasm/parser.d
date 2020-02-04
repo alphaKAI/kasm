@@ -93,6 +93,84 @@ Nullable!Opcode tryParseJumpR(alias helper)(ref Token[] tokens, size_t i) {
   }
 }
 
+class LabelOp : Opcode {
+  string label;
+  this(LabelToken lt) {
+    this.label = lt.label;
+  }
+
+  OpcodeSymbol sym() {
+    return OpcodeSymbol.hlt; // dummy
+  }
+}
+
+class JumpWithLabelOp : Opcode {
+  JumpWithLabelKind kind;
+  string label;
+  this(JumpWithLabelToken jwlt, LabelToken lt) {
+    this.kind = jwlt.kind;
+    this.label = lt.label;
+  }
+
+  OpcodeSymbol sym() {
+    return OpcodeSymbol.hlt; // dummy
+  }
+}
+
+Opcode[] resolveLabel(Opcode[] ops) {
+  size_t[string] labelMap;
+  Opcode[] ops2;
+  size_t pc;
+
+  // labelに対応するpcを計算する。また、命令中からLabelOpを除去する
+  foreach (op; ops) {
+    if ((cast(LabelOp) op) !is null) {
+      LabelOp lop = cast(LabelOp) op;
+      labelMap[lop.label] = pc;
+    } else {
+      ops2 ~= op;
+      pc++;
+    }
+  }
+
+  Opcode[] resolved;
+  foreach (op; ops2) {
+    if ((cast(JumpWithLabelOp) op) !is null) {
+      JumpWithLabelOp jop = cast(JumpWithLabelOp) op;
+      if (jop.label in labelMap) {
+        size_t tpc = labelMap[jop.label];
+
+        final switch (jop.kind) with (JumpWithLabelKind) {
+        case jmp:
+          resolved ~= new JmpaI(tpc.to!short);
+          break;
+        case jz:
+          resolved ~= new JazI(tpc.to!short);
+          break;
+        case jp:
+          resolved ~= new JapI(tpc.to!short);
+          break;
+        case jn:
+          resolved ~= new JanI(tpc.to!short);
+          break;
+        case jc:
+          resolved ~= new JacI(tpc.to!short);
+          break;
+        case jo:
+          resolved ~= new JaoI(tpc.to!short);
+          break;
+        }
+      } else {
+        throw new ParserException("No such a label - %s".format(jop.label));
+      }
+    } else {
+      resolved ~= op;
+    }
+  }
+
+  return resolved;
+}
+
 Opcode[] parse(Token[] tokens) {
   Opcode[] parsed;
 
@@ -158,6 +236,16 @@ Opcode[] parse(Token[] tokens) {
     } else {
       parsed ~= result.get;
     }
+    i += 2;
+  }
+
+  void parseLabel(alias i, alias token)() {
+    parsed ~= new LabelOp(token.to!(LabelToken));
+    i += 1;
+  }
+
+  void parseJumpWithLabel(alias i, alias token)() {
+    parsed ~= new JumpWithLabelOp(token.to!(JumpWithLabelToken), tokens[i + 1].to!(LabelToken));
     i += 2;
   }
 
@@ -413,14 +501,24 @@ Opcode[] parse(Token[] tokens) {
 
         break;
       }
+    case TokenType.Label: {
+        parseLabel!(i, token)();
+        break;
+      }
+    case TokenType.JumpWithLabel: {
+        parseJumpWithLabel!(i, token)();
+        break;
+      }
     case TokenType.Register:
     case TokenType.Immediate: {
-        throw new ParserException("Unexpected token was given %s".format(token.type));
+        throw new ParserException("Unexpected token given %s".format(token.type));
       }
     }
   }
 
-  return parsed;
+  return resolveLabel(parsed);
+
+  //return parsed;
 }
 
 Opcode[] parse_file(string file_name) {

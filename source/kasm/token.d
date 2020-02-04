@@ -5,7 +5,9 @@ import kasm.register;
 enum TokenType {
   Opcode,
   Register,
-  Immediate
+  Immediate,
+  Label,
+  JumpWithLabel
 }
 
 interface Token {
@@ -45,5 +47,38 @@ class ImmediateToken : Token {
 
   TokenType type() {
     return TokenType.Immediate;
+  }
+}
+
+class LabelToken : Token {
+  string label;
+
+  this(string label) {
+    this.label = label;
+  }
+
+  TokenType type() {
+    return TokenType.Label;
+  }
+}
+
+enum JumpWithLabelKind {
+  jmp = "jmp",
+  jz = "jz",
+  jp = "jp",
+  jn = "jn",
+  jc = "jc",
+  jo = "jo"
+}
+
+class JumpWithLabelToken : Token {
+  JumpWithLabelKind kind;
+
+  this(JumpWithLabelKind kind) {
+    this.kind = kind;
+  }
+
+  TokenType type() {
+    return TokenType.JumpWithLabel;
   }
 }

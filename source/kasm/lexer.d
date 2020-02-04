@@ -9,6 +9,7 @@ import std.file;
 
 enum commentRegex = ctRegex!";.*$";
 enum commaRegex = ctRegex!",";
+enum labelRegex = ctRegex!r"\w(\w|\d)*";
 
 Nullable!(OpcodeToken) tryParseOpcodeToken(string s) {
   switch (s) with (OpcodeSymbol) {
@@ -111,6 +112,34 @@ Nullable!(ImmediateToken) tryParseImmediateToken(string s) {
   }
 }
 
+Nullable!(LabelToken) tryParseLabelToken(string s) {
+  if (s.strip.match(labelRegex)) {
+    import std.stdio;
+
+    if (s.length >= 2 && s[$ - 1] == ':') {
+      return nullable(new LabelToken(s[0 .. $ - 1]));
+    } else {
+      return nullable(new LabelToken(s));
+    }
+  } else {
+    return typeof(return).init;
+  }
+}
+
+Nullable!(JumpWithLabelToken) tryParseJumpWithLabelToken(string s) {
+  switch (s) with (JumpWithLabelKind) {
+  case jmp:
+  case jz:
+  case jp:
+  case jn:
+  case jc:
+  case jo:
+    return nullable(new JumpWithLabelToken(cast(JumpWithLabelKind) s));
+  default:
+    return typeof(return).init;
+  }
+}
+
 class LexerException : Exception {
   this(string msg) {
     super(msg);
@@ -120,7 +149,7 @@ class LexerException : Exception {
 Token[] lex(string input) {
   Token[] tokens;
   string[] inputs = input.split("\n")
-    .map!((string line) => line.strip.replaceAll(commentRegex, "").replaceAll(commaRegex, ""))
+    .map!((string line) => line.strip.replaceAll(commentRegex, " ").replaceAll(commaRegex, " "))
     .array
     .filter!((string line) => line.length > 0)
     .array;
@@ -131,6 +160,8 @@ Token[] lex(string input) {
     if (elem.length == 0) {
       continue;
     }
+    elem = elem.chomp.strip;
+
     auto maybeOpcode = tryParseOpcodeToken(elem);
     if (!maybeOpcode.isNull) {
       tokens ~= maybeOpcode.get;
@@ -146,8 +177,18 @@ Token[] lex(string input) {
       tokens ~= maybeImmediate.get;
       continue;
     }
+    auto maybeJumpWithLabel = tryParseJumpWithLabelToken(elem);
+    if (!maybeJumpWithLabel.isNull) {
+      tokens ~= maybeJumpWithLabel.get;
+      continue;
+    }
+    auto maybeLabel = tryParseLabelToken(elem);
+    if (!maybeLabel.isNull) {
+      tokens ~= maybeLabel.get;
+      continue;
+    }
 
-    throw new LexerException("Unknown token was given - \"%s\"".format(elem));
+    throw new LexerException(" Unknown token given - \"%s\"".format(elem));
   }
 
   return tokens;
