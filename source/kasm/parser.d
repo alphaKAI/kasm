@@ -177,7 +177,7 @@ Opcode[] parse(Token[] tokens) {
   void parseImm(alias helper, alias i)() {
     auto result = tryParseImmMode!(helper)(tokens, i);
     if (result.isNull) {
-      throw new ParserException("Parse Error");
+      throw new ParserException("Parse Error: imm expected");
     } else {
       parsed ~= result.get;
     }
@@ -187,7 +187,7 @@ Opcode[] parse(Token[] tokens) {
   void parseReg(alias helper, alias i)() {
     auto result = tryParseRegMode!(helper)(tokens, i);
     if (result.isNull) {
-      throw new ParserException("Parse Error");
+      throw new ParserException("Parse Error: reg expected");
     } else {
       parsed ~= result.get;
     }
@@ -197,7 +197,7 @@ Opcode[] parse(Token[] tokens) {
   void parseLoad(alias i)() {
     auto result = tryParseLoad(tokens, i);
     if (result.isNull) {
-      throw new ParserException("Parse Error");
+      throw new ParserException("Parse Error: load reg, reg, imm expected");
     } else {
       parsed ~= result.get;
     }
@@ -207,7 +207,7 @@ Opcode[] parse(Token[] tokens) {
   void parseStore(alias i)() {
     auto result = tryParseStore(tokens, i);
     if (result.isNull) {
-      throw new ParserException("Parse Error");
+      throw new ParserException("Parse Error: store: store reg, imm, reg expected");
     } else {
       parsed ~= result.get;
     }
@@ -222,7 +222,7 @@ Opcode[] parse(Token[] tokens) {
   void parseJumpI(alias helper, alias i)() {
     auto result = tryParseJumpI!(helper)(tokens, i);
     if (result.isNull) {
-      throw new ParserException("Parse Error");
+      throw new ParserException("Parse Error<jmpI>: imm expected");
     } else {
       parsed ~= result.get;
     }
@@ -232,7 +232,7 @@ Opcode[] parse(Token[] tokens) {
   void parseJumpR(alias helper, alias i)() {
     auto result = tryParseJumpR!(helper)(tokens, i);
     if (result.isNull) {
-      throw new ParserException("Parse Error");
+      throw new ParserException("Parse Error<jmpR>: reg expected");
     } else {
       parsed ~= result.get;
     }
